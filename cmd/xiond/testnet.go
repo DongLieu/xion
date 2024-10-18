@@ -6,25 +6,26 @@ import (
 	"strings"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
-	tmos "github.com/cometbft/cometbft/libs/os"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/spf13/cast"
+	"github.com/spf13/cobra"
+
+	"cosmossdk.io/math"
+	// storetypes "cosmossdk.io/store/types"
+	tmos "github.com/cometbft/cometbft/libs/os"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	// distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/spf13/cast"
-	"github.com/spf13/cobra"
 
 	"github.com/burnt-labs/xion/app"
 )
@@ -80,8 +81,8 @@ func newTestnetApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts s
 }
 
 func initAppForTestnet(app *app.WasmApp, args valArgs) *app.WasmApp {
-	// Required Changes:
-	//
+	// // Required Changes:
+	// //
 	ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
 
 	pubkey := &ed25519.PubKey{Key: args.newValPubKey.Bytes()}
@@ -90,8 +91,8 @@ func initAppForTestnet(app *app.WasmApp, args valArgs) *app.WasmApp {
 		tmos.Exit(err.Error())
 	}
 
-	// STAKING
-	//
+	// // STAKING
+	// //
 
 	// Create Validator struct for our new validator.
 	newVal := stakingtypes.Validator{
@@ -119,43 +120,43 @@ func initAppForTestnet(app *app.WasmApp, args valArgs) *app.WasmApp {
 		tmos.Exit(err.Error())
 	}
 
-	// Remove all validators from power store
-	stakingKey := app.GetKey(stakingtypes.ModuleName)
-	stakingStore := ctx.KVStore(stakingKey)
-	iterator, err := app.StakingKeeper.ValidatorsPowerStoreIterator(ctx)
-	if err != nil {
-		tmos.Exit(err.Error())
-	}
-	for ; iterator.Valid(); iterator.Next() {
-		stakingStore.Delete(iterator.Key())
-	}
-	iterator.Close()
+	// // Remove all validators from power store
+	// stakingKey := app.GetKey(stakingtypes.ModuleName)
+	// stakingStore := ctx.KVStore(stakingKey)
+	// iterator, err := app.StakingKeeper.ValidatorsPowerStoreIterator(ctx)
+	// if err != nil {
+	// 	tmos.Exit(err.Error())
+	// }
+	// for ; iterator.Valid(); iterator.Next() {
+	// 	stakingStore.Delete(iterator.Key())
+	// }
+	// iterator.Close()
 
-	// Remove all valdiators from last validators store
-	iterator, err = app.StakingKeeper.LastValidatorsIterator(ctx)
-	if err != nil {
-		tmos.Exit(err.Error())
-	}
-	for ; iterator.Valid(); iterator.Next() {
-		stakingStore.Delete(iterator.Key())
-	}
-	iterator.Close()
+	// // Remove all valdiators from last validators store
+	// iterator, err = app.StakingKeeper.LastValidatorsIterator(ctx)
+	// if err != nil {
+	// 	tmos.Exit(err.Error())
+	// }
+	// for ; iterator.Valid(); iterator.Next() {
+	// 	stakingStore.Delete(iterator.Key())
+	// }
+	// iterator.Close()
 
-	// Remove all validators from validators store
-	iterator = stakingStore.Iterator(stakingtypes.ValidatorsKey, storetypes.PrefixEndBytes(stakingtypes.ValidatorsKey))
-	for ; iterator.Valid(); iterator.Next() {
-		stakingStore.Delete(iterator.Key())
-	}
-	iterator.Close()
+	// // Remove all validators from validators store
+	// iterator = stakingStore.Iterator(stakingtypes.ValidatorsKey, storetypes.PrefixEndBytes(stakingtypes.ValidatorsKey))
+	// for ; iterator.Valid(); iterator.Next() {
+	// 	stakingStore.Delete(iterator.Key())
+	// }
+	// iterator.Close()
 
-	// Remove all validators from unbonding queue
-	iterator = stakingStore.Iterator(stakingtypes.ValidatorQueueKey, storetypes.PrefixEndBytes(stakingtypes.ValidatorQueueKey))
-	for ; iterator.Valid(); iterator.Next() {
-		stakingStore.Delete(iterator.Key())
-	}
-	iterator.Close()
+	// // Remove all validators from unbonding queue
+	// iterator = stakingStore.Iterator(stakingtypes.ValidatorQueueKey, storetypes.PrefixEndBytes(stakingtypes.ValidatorQueueKey))
+	// for ; iterator.Valid(); iterator.Next() {
+	// 	stakingStore.Delete(iterator.Key())
+	// }
+	// iterator.Close()
 
-	// Add our validator to power and last validators store
+	// // Add our validator to power and last validators store
 	app.StakingKeeper.SetValidator(ctx, newVal)
 	err = app.StakingKeeper.SetValidatorByConsAddr(ctx, newVal)
 	if err != nil {
@@ -167,17 +168,17 @@ func initAppForTestnet(app *app.WasmApp, args valArgs) *app.WasmApp {
 		tmos.Exit(err.Error())
 	}
 
-	// DISTRIBUTION
-	//
+	// // DISTRIBUTION
+	// //
 
-	// Initialize records for this validator across all distribution stores
-	app.DistrKeeper.SetValidatorHistoricalRewards(ctx, validator, 0, distrtypes.NewValidatorHistoricalRewards(sdk.DecCoins{}, 1))
-	app.DistrKeeper.SetValidatorCurrentRewards(ctx, validator, distrtypes.NewValidatorCurrentRewards(sdk.DecCoins{}, 1))
-	app.DistrKeeper.SetValidatorAccumulatedCommission(ctx, validator, distrtypes.InitialValidatorAccumulatedCommission())
-	app.DistrKeeper.SetValidatorOutstandingRewards(ctx, validator, distrtypes.ValidatorOutstandingRewards{Rewards: sdk.DecCoins{}})
+	// // Initialize records for this validator across all distribution stores
+	// app.DistrKeeper.SetValidatorHistoricalRewards(ctx, validator, 0, distrtypes.NewValidatorHistoricalRewards(sdk.DecCoins{}, 1))
+	// app.DistrKeeper.SetValidatorCurrentRewards(ctx, validator, distrtypes.NewValidatorCurrentRewards(sdk.DecCoins{}, 1))
+	// app.DistrKeeper.SetValidatorAccumulatedCommission(ctx, validator, distrtypes.InitialValidatorAccumulatedCommission())
+	// app.DistrKeeper.SetValidatorOutstandingRewards(ctx, validator, distrtypes.ValidatorOutstandingRewards{Rewards: sdk.DecCoins{}})
 
-	// SLASHING
-	//
+	// // SLASHING
+	// //
 
 	// Set validator signing info for our new validator.
 	newConsAddr := sdk.ConsAddress(args.newValAddr.Bytes())
